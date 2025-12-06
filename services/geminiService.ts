@@ -2,7 +2,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { ExtractionResponse } from '../types';
 
 const ai = new GoogleGenAI({
-  apiKey: "AIzaSyBmctnuucEZximvM-mrDoAXQxmuACQ3y60",
+  apiKey: import.meta.env.VITE_GEMINI_API_KEY,
 });
 
 const MODEL_NAME = 'gemini-2.5-flash';
