@@ -1,0 +1,7 @@
+{
+  "name": "Revo - Renas Vokabeltrainer",
+  "description": "Eine Lern-App, die Vokabeln aus Schulbuch-Fotos extrahiert und abfragt.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
