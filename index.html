@@ -3,12 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Vokabel-Profi</title>
+    <title>Revo Vocabulary Trainer</title>
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#0A3D45">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              revo: {
+                teal: '#0A3D45', // Main Background
+                emerald: '#1A5F54', // Primary Buttons / Surface
+                gold: '#D4AF37', // Accents / Highlights
+                bg: '#0A3D45',
+                surface: '#114E57', // Slightly lighter for cards
+                success: '#2E8C7A',
+                error: '#D9534F',
+                text: '#E0E8E8' // Surface Light for text
+              }
+            }
+          }
+        }
+      }
+    </script>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
       body {
@@ -50,7 +70,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-slate-900 text-slate-100 antialiased selection:bg-sky-500 selection:text-white overflow-x-hidden">
+  <body class="bg-revo-teal text-revo-text antialiased selection:bg-revo-gold selection:text-white overflow-x-hidden">
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>

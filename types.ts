@@ -1,3 +1,11 @@
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatar?: string;
+  password?: string; // In a real app, never store plain text. This is a simulation.
+}
+
 export interface VocabItem {
   id: string;
   original: string; // The foreign word (e.g., English, French)
@@ -15,6 +23,7 @@ export interface SetMetadata {
 
 export interface VocabSet {
   id: string;
+  userId: string; // Added for multi-tenancy
   title: string;
   metadata?: SetMetadata;
   createdAt: number;
@@ -24,9 +33,12 @@ export interface VocabSet {
 }
 
 export enum AppView {
+  AUTH = 'AUTH',
   DASHBOARD = 'DASHBOARD',
   CREATE_SET = 'CREATE_SET',
-  QUIZ = 'QUIZ',
+  QUIZ = 'QUIZ', // Simple Cards
+  MATCHING_GAME = 'MATCHING_GAME', // Match the cards
+  MULTIPLE_CHOICE = 'MULTIPLE_CHOICE', // Multiple Choice
   STATISTICS = 'STATISTICS',
 }
 

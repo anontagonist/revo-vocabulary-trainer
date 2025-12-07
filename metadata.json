@@ -1,5 +1,5 @@
 {
-  "name": "Revo - Renas Vokabeltrainer",
+  "name": "Copy of Revo - Renas Vocabulary Trainer 1.2",
   "description": "Eine Lern-App, die Vokabeln aus Schulbuch-Fotos extrahiert und abfragt.",
   "requestFramePermissions": [
     "camera"

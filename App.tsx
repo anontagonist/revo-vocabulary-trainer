@@ -1,21 +1,54 @@
 import React, { useState, useEffect } from 'react';
-import { VocabSet, AppView, QuizDirection, VocabItem } from './types';
+import { VocabSet, AppView, QuizDirection, VocabItem, User } from './types';
 import { Dashboard } from './components/Dashboard';
 import { CreateSet } from './components/CreateSet';
 import { Quiz } from './components/Quiz';
 import { Statistics } from './components/Statistics';
+import { Auth } from './components/Auth';
+import { MatchingGame } from './components/MatchingGame';
+import { MultipleChoiceGame } from './components/MultipleChoiceGame';
 import { loadSets, saveSets, updateStreak } from './services/storageService';
+import { getCurrentUser, logoutUser } from './services/authService';
 
 const App: React.FC = () => {
-  const [view, setView] = useState<AppView>(AppView.DASHBOARD);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [view, setView] = useState<AppView>(AppView.AUTH);
+  
   const [sets, setSets] = useState<VocabSet[]>([]);
   const [activeSet, setActiveSet] = useState<VocabSet | null>(null);
   const [quizDirection, setQuizDirection] = useState<QuizDirection>(QuizDirection.ORIGINAL_TO_TRANSLATION);
 
+  // Check for login on mount
   useEffect(() => {
-    const loaded = loadSets();
-    setSets(loaded);
+    const user = getCurrentUser();
+    if (user) {
+      setCurrentUser(user);
+      loadUserData(user.id);
+      setView(AppView.DASHBOARD);
+    }
   }, []);
+
+  const loadUserData = (userId: string) => {
+    const loaded = loadSets(userId);
+    setSets(loaded);
+  };
+
+  const handleLogin = (user: User) => {
+    setCurrentUser(user);
+    loadUserData(user.id);
+    setView(AppView.DASHBOARD);
+  };
+
+  const handleLogout = () => {
+    logoutUser();
+    setCurrentUser(null);
+    setSets([]);
+    setView(AppView.AUTH);
+  };
+
+  const handleUpdateUser = (updatedUser: User) => {
+    setCurrentUser(updatedUser);
+  };
 
   // Calculate items for Tough Mode (< 81% success rate)
   const getToughItems = (): VocabItem[] => {
@@ -27,9 +60,6 @@ const App: React.FC = () => {
         if (total > 0) {
           rate = (item.correctCount || 0) / total;
         }
-        // Include if rate < 0.81 OR never practiced (optional, but let's stick to explicit requests)
-        // User asked: "weniger als 81% Erfolgsraten"
-        // Words with 0 attempts have 0% rate, so they are included.
         if (rate < 0.81) {
           toughOnes.push(item);
         }
@@ -39,7 +69,12 @@ const App: React.FC = () => {
   };
 
   const handleSaveSet = (newSet: VocabSet) => {
-    const updatedSets = [newSet, ...sets];
+    if (!currentUser) return;
+    
+    // Assign current user ID to the new set
+    const setWithUser = { ...newSet, userId: currentUser.id };
+    
+    const updatedSets = [setWithUser, ...sets];
     setSets(updatedSets);
     saveSets(updatedSets);
     setView(AppView.DASHBOARD);
@@ -51,10 +86,10 @@ const App: React.FC = () => {
     saveSets(updatedSets);
   };
 
-  const handleSelectSet = (set: VocabSet, direction: QuizDirection) => {
+  const handleSelectSet = (set: VocabSet, mode: AppView, direction: QuizDirection) => {
     setActiveSet(set);
     setQuizDirection(direction);
-    setView(AppView.QUIZ);
+    setView(mode);
   };
 
   const handleStartToughMode = (direction: QuizDirection) => {
@@ -64,6 +99,7 @@ const App: React.FC = () => {
     // Create a temporary set
     const toughSet: VocabSet = {
       id: 'TOUGH_MODE',
+      userId: currentUser?.id || 'temp',
       title: 'Tough Mode 🔥',
       createdAt: Date.now(),
       items: toughItems,
@@ -73,24 +109,35 @@ const App: React.FC = () => {
     
     setActiveSet(toughSet);
     setQuizDirection(direction);
+    // Tough mode defaults to simple quiz for now, or we could ask for mode too?
+    // Prompt said "Auch hier wird wieder gefragt in welche Richtung abgefragt werden soll".
+    // Let's default tough mode to QUIZ (Flashcards) as it's the most effective for drilling.
     setView(AppView.QUIZ);
   };
 
   const handleQuizComplete = (scorePercentage: number, updatedItems: VocabItem[]) => {
-    if (!activeSet) return;
-    
-    // 1. Update the score on the set (only if it's a real set, not tough mode)
-    // 2. Update the stats on the individual items (globally)
+    if (!activeSet || !currentUser) return;
     
     const newSets = sets.map(s => {
-      // Is this the set we just played?
+      // Only update stats if it's a real set, not tough mode temp set
+      if (s.id === 'TOUGH_MODE') {
+         // For tough mode, we must find the original items in the real sets and update them
+         // BUT standard saveSets logic iterates over `s.items`.
+         // We need a way to propagate updates back to source sets.
+         // This simple implementation only updates if the item ID matches.
+         const newItems = s.items.map(item => {
+             const updatedVersion = updatedItems.find(u => u.id === item.id);
+             return updatedVersion || item;
+         });
+         return { ...s, items: newItems };
+      }
+
       const isCurrentSet = s.id === activeSet.id;
       
-      // Update items inside this set if they were part of the quiz
       const newItems = s.items.map(item => {
         const updatedVersion = updatedItems.find(u => u.id === item.id);
         if (updatedVersion) {
-          return updatedVersion; // Use the version with updated counts
+          return updatedVersion;
         }
         return item;
       });
@@ -98,31 +145,43 @@ const App: React.FC = () => {
       return {
         ...s,
         items: newItems,
-        lastScore: isCurrentSet ? scorePercentage : s.lastScore // Only update score if it was this specific set
+        lastScore: isCurrentSet ? scorePercentage : s.lastScore
       };
     });
 
     setSets(newSets);
     saveSets(newSets);
     
-    // Update Streak
-    updateStreak();
+    updateStreak(currentUser.id);
   };
 
+  if (view === AppView.AUTH) {
+    return <Auth onLogin={handleLogin} />;
+  }
+
+  // Guard clause
+  if (!currentUser) {
+      setView(AppView.AUTH);
+      return null;
+  }
+
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans w-full overflow-x-hidden">
+    <div className="min-h-screen bg-revo-teal text-white font-sans w-full overflow-x-hidden">
       {/* Background decoration */}
-      <div className="fixed top-0 left-0 right-0 h-64 bg-gradient-to-b from-slate-800 to-slate-900 -z-10"></div>
+      <div className="fixed top-0 left-0 right-0 h-64 bg-gradient-to-b from-revo-teal to-revo-surface -z-10"></div>
       
       <main className="h-full">
         {view === AppView.DASHBOARD && (
           <Dashboard 
+            user={currentUser}
             sets={sets}
             onDeleteSet={handleDeleteSet}
             onSelectSet={handleSelectSet}
             onCreateNew={() => setView(AppView.CREATE_SET)}
             onStartToughMode={handleStartToughMode}
             onShowStats={() => setView(AppView.STATISTICS)}
+            onUpdateUser={handleUpdateUser}
+            onLogout={handleLogout}
             toughItemsCount={getToughItems().length}
           />
         )}
@@ -134,8 +193,27 @@ const App: React.FC = () => {
           />
         )}
 
+        {/* Game Modes */}
         {view === AppView.QUIZ && activeSet && (
           <Quiz 
+            set={activeSet}
+            direction={quizDirection}
+            onExit={() => setView(AppView.DASHBOARD)}
+            onComplete={handleQuizComplete}
+          />
+        )}
+
+        {view === AppView.MATCHING_GAME && activeSet && (
+          <MatchingGame 
+            set={activeSet}
+            direction={quizDirection}
+            onExit={() => setView(AppView.DASHBOARD)}
+            onComplete={handleQuizComplete}
+          />
+        )}
+
+        {view === AppView.MULTIPLE_CHOICE && activeSet && (
+          <MultipleChoiceGame 
             set={activeSet}
             direction={quizDirection}
             onExit={() => setView(AppView.DASHBOARD)}

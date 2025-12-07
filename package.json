@@ -1,5 +1,5 @@
 {
-  "name": "revo---renas-vokabeltrainer",
+  "name": "copy-of-revo---renas-vocabulary-trainer-1.2",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,9 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/genai": "^1.31.0",
-    "lucide-react": "^0.555.0",
     "react": "^19.2.1",
+    "@google/genai": "^1.30.0",
+    "lucide-react": "^0.555.0",
     "react-dom": "^19.2.1"
   },
   "devDependencies": {
