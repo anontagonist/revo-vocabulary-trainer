@@ -1,8 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { ExtractionResponse } from '../types';
-// geminiservice.ts
-
-console.log("Mein Key ist:", import.meta.env.VITE_GEMINI_API_KEY); // Zum Testen
 
 const ai = new GoogleGenAI({
   apiKey: import.meta.env.VITE_GEMINI_API_KEY,
