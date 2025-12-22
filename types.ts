@@ -1,17 +1,22 @@
+
 export interface User {
   id: string;
   email: string;
   name: string;
   avatar?: string;
-  password?: string; // In a real app, never store plain text. This is a simulation.
+  password?: string;
+  createdAt: number;
+  lastLogin: number;
+  isPremium?: boolean;
 }
 
 export interface VocabItem {
   id: string;
-  original: string; // The foreign word (e.g., English, French)
-  translation: string; // The known language (e.g., German)
+  original: string;
+  translation: string;
   correctCount?: number;
   wrongCount?: number;
+  lastPracticed?: number;
 }
 
 export interface SetMetadata {
@@ -23,28 +28,29 @@ export interface SetMetadata {
 
 export interface VocabSet {
   id: string;
-  userId: string; // Added for multi-tenancy
+  userId: string;
   title: string;
   metadata?: SetMetadata;
   createdAt: number;
   items: VocabItem[];
-  color: string; // Helper for UI aesthetics
-  lastScore?: number; // Persistence of the last quiz result (0-100)
+  color: string;
+  lastScore?: number;
+  isSynced?: boolean; // New: tracking sync status
 }
 
 export enum AppView {
   AUTH = 'AUTH',
   DASHBOARD = 'DASHBOARD',
   CREATE_SET = 'CREATE_SET',
-  QUIZ = 'QUIZ', // Simple Cards
-  MATCHING_GAME = 'MATCHING_GAME', // Match the cards
-  MULTIPLE_CHOICE = 'MULTIPLE_CHOICE', // Multiple Choice
+  QUIZ = 'QUIZ',
+  MATCHING_GAME = 'MATCHING_GAME',
+  MULTIPLE_CHOICE = 'MULTIPLE_CHOICE',
   STATISTICS = 'STATISTICS',
 }
 
 export enum QuizDirection {
-  ORIGINAL_TO_TRANSLATION = 'ORIGINAL_TO_TRANSLATION', // e.g. English -> German
-  TRANSLATION_TO_ORIGINAL = 'TRANSLATION_TO_ORIGINAL', // e.g. German -> English
+  ORIGINAL_TO_TRANSLATION = 'ORIGINAL_TO_TRANSLATION',
+  TRANSLATION_TO_ORIGINAL = 'TRANSLATION_TO_ORIGINAL',
 }
 
 export interface ExtractionResponse {
@@ -58,4 +64,11 @@ export interface ExtractionResponse {
     original: string;
     translation: string;
   }[];
+}
+
+export interface BackupData {
+  version: string;
+  users: User[];
+  allSets: Record<string, VocabSet[]>;
+  timestamp: number;
 }

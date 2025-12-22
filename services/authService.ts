@@ -1,7 +1,9 @@
+
 import { User } from "../types";
 
 const USERS_KEY = 'revo_users';
 const CURRENT_USER_KEY = 'revo_current_user_id';
+const LAST_EMAIL_KEY = 'revo_last_email';
 
 const getUsers = (): User[] => {
   try {
@@ -25,14 +27,17 @@ export const registerUser = (email: string, password: string, name: string): Use
   const newUser: User = {
     id: Date.now().toString(),
     email,
-    password, // Simulation only
+    password, 
     name,
-    avatar: undefined
+    avatar: undefined,
+    createdAt: Date.now(),
+    lastLogin: Date.now()
   };
 
   users.push(newUser);
   saveUsers(users);
   localStorage.setItem(CURRENT_USER_KEY, newUser.id);
+  localStorage.setItem(LAST_EMAIL_KEY, email);
   return newUser;
 };
 
@@ -45,7 +50,38 @@ export const loginUser = (email: string, password: string): User => {
   }
   
   localStorage.setItem(CURRENT_USER_KEY, user.id);
+  localStorage.setItem(LAST_EMAIL_KEY, email);
   return user;
+};
+
+// PREPARATION FOR FIREBASE GOOGLE LOGIN
+export const loginWithGoogle = async (): Promise<User> => {
+  // Simulate network delay
+  await new Promise(r => setTimeout(r, 1200));
+  
+  // This is a placeholder. When Firebase is active, we would use:
+  // const provider = new GoogleAuthProvider();
+  // const result = await signInWithPopup(auth, provider);
+  
+  const mockGoogleUser: User = {
+    id: "google_" + Date.now(),
+    email: "test-user@gmail.com",
+    name: "Google Nutzer",
+    avatar: "https://lh3.googleusercontent.com/a/ACg8ocL...",
+    createdAt: Date.now(),
+    lastLogin: Date.now(),
+    isPremium: true
+  };
+
+  const users = getUsers();
+  if (!users.find(u => u.email === mockGoogleUser.email)) {
+    users.push(mockGoogleUser);
+    saveUsers(users);
+  }
+
+  localStorage.setItem(CURRENT_USER_KEY, mockGoogleUser.id);
+  localStorage.setItem(LAST_EMAIL_KEY, mockGoogleUser.email);
+  return mockGoogleUser;
 };
 
 export const logoutUser = () => {
@@ -57,6 +93,10 @@ export const getCurrentUser = (): User | null => {
   if (!currentId) return null;
   const users = getUsers();
   return users.find(u => u.id === currentId) || null;
+};
+
+export const getLastEmail = (): string | null => {
+  return localStorage.getItem(LAST_EMAIL_KEY);
 };
 
 export const updateUserProfile = (userId: string, updates: Partial<User>): User => {

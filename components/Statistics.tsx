@@ -1,6 +1,6 @@
 import React from 'react';
 import { VocabSet, VocabItem } from '../types';
-import { ArrowLeft, Brain, TrendingUp, Layers, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Brain, TrendingUp, Layers, AlertTriangle, Trophy, TrendingDown } from 'lucide-react';
 
 interface StatisticsProps {
   sets: VocabSet[];
@@ -29,6 +29,16 @@ export const Statistics: React.FC<StatisticsProps> = ({ sets, onExit }) => {
     .filter(item => (item.wrongCount || 0) > 0)
     .sort((a, b) => (b.wrongCount || 0) - (a.wrongCount || 0))
     .slice(0, 10);
+
+  // Identify Top and Flop sets
+  const playedSets = sets.filter(s => s.lastScore !== undefined);
+  playedSets.sort((a, b) => (b.lastScore || 0) - (a.lastScore || 0));
+  
+  const bestSet = playedSets.length > 0 ? playedSets[0] : null;
+  const worstSet = playedSets.length > 0 ? playedSets[playedSets.length - 1] : null;
+  
+  // If best and worst are the same (only 1 set), don't show worst
+  const showWorst = worstSet && bestSet && worstSet.id !== bestSet.id;
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-8 animate-in fade-in duration-300 pb-20">
@@ -77,36 +87,59 @@ export const Statistics: React.FC<StatisticsProps> = ({ sets, onExit }) => {
         </div>
       </div>
 
-      <div className="bg-revo-surface p-6 rounded-2xl border border-revo-emerald/30 shadow-lg">
-        <h3 className="text-lg font-bold text-white mb-6">Leistung pro Set</h3>
-        <div className="space-y-4">
-          {sets.length === 0 && <p className="text-slate-500">Keine Sets vorhanden.</p>}
-          {sets.map(set => (
-            <div key={set.id} className="space-y-1">
-               <div className="flex justify-between text-sm">
-                 <span className="font-semibold text-slate-300">{set.title}</span>
-                 <span className="text-slate-400 font-mono">{set.lastScore !== undefined ? set.lastScore + '%' : '-'}</span>
-               </div>
-               <div className="w-full h-3 bg-revo-teal rounded-full overflow-hidden border border-revo-emerald/10">
-                 {set.lastScore !== undefined ? (
-                   <div 
-                     className={`h-full rounded-full ${set.lastScore >= 80 ? 'bg-revo-success' : set.lastScore >= 50 ? 'bg-amber-500' : 'bg-orange-500'}`}
-                     style={{ width: `${set.lastScore}%` }}
-                   ></div>
-                 ) : (
-                   <div className="h-full bg-revo-surface w-full opacity-20"></div>
-                 )}
-               </div>
-            </div>
-          ))}
-        </div>
+      <div className="bg-revo-surface rounded-2xl border border-revo-emerald/30 shadow-lg overflow-hidden p-6">
+        <h3 className="text-lg font-bold text-white mb-6">Top & Flop</h3>
+        
+        {playedSets.length === 0 ? (
+           <p className="text-slate-500 text-center py-4">Lerne erst ein paar Sets, um deine Bestleistungen zu sehen!</p>
+        ) : (
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {bestSet && (
+                <div className="bg-gradient-to-br from-revo-surface to-revo-emerald/20 rounded-xl p-5 border border-revo-emerald/30 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-3 opacity-10">
+                    <Trophy className="w-20 h-20" />
+                  </div>
+                  <div className="flex items-center gap-3 mb-3 relative z-10">
+                    <div className="p-2 bg-revo-gold/20 rounded-full text-revo-gold">
+                       <Trophy className="w-6 h-6" />
+                    </div>
+                    <span className="text-sm font-bold text-revo-gold uppercase tracking-wide">Beste Leistung</span>
+                  </div>
+                  <h4 className="text-xl font-bold text-white mb-2 truncate relative z-10">{bestSet.title}</h4>
+                  <div className="flex items-end gap-2 relative z-10">
+                    <span className="text-4xl font-extrabold text-white">{bestSet.lastScore}%</span>
+                    <span className="text-sm text-slate-400 mb-1.5">Erfolg</span>
+                  </div>
+                </div>
+              )}
+
+              {showWorst && worstSet && (
+                <div className="bg-gradient-to-br from-revo-surface to-revo-error/10 rounded-xl p-5 border border-revo-error/20 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-3 opacity-10">
+                    <TrendingDown className="w-20 h-20" />
+                  </div>
+                  <div className="flex items-center gap-3 mb-3 relative z-10">
+                    <div className="p-2 bg-revo-error/20 rounded-full text-revo-error">
+                       <TrendingDown className="w-6 h-6" />
+                    </div>
+                    <span className="text-sm font-bold text-revo-error uppercase tracking-wide">Hier geht noch was</span>
+                  </div>
+                  <h4 className="text-xl font-bold text-white mb-2 truncate relative z-10">{worstSet.title}</h4>
+                  <div className="flex items-end gap-2 relative z-10">
+                    <span className="text-4xl font-extrabold text-white">{worstSet.lastScore}%</span>
+                    <span className="text-sm text-slate-400 mb-1.5">Erfolg</span>
+                  </div>
+                </div>
+              )}
+           </div>
+        )}
       </div>
 
       <div className="bg-revo-surface rounded-2xl border border-revo-emerald/30 shadow-lg overflow-hidden">
         <div className="p-6 border-b border-revo-emerald/20">
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-revo-error" />
-            Häufigste Fehler
+            Häufigste Fehler (Top 10)
           </h3>
           <p className="text-sm text-slate-400 mt-1">Diese Vokabeln bereiten Dir am meisten Schwierigkeiten.</p>
         </div>

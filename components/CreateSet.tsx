@@ -15,7 +15,7 @@ export const CreateSet: React.FC<CreateSetProps> = ({ onSave, onCancel }) => {
   const [extractedItems, setExtractedItems] = useState<VocabItem[]>([]);
   
   const [metaLanguage, setMetaLanguage] = useState('');
-  const [metaGrade, setMetaGrade] = useState('8');
+  const [metaGrade, setMetaGrade] = useState('9');
   const [metaChapter, setMetaChapter] = useState('');
   const [metaPage, setMetaPage] = useState('');
 
@@ -57,7 +57,14 @@ export const CreateSet: React.FC<CreateSetProps> = ({ onSave, onCancel }) => {
     let foundLanguage = '';
     let foundGrade = '';
     let foundChapter = '';
-    let foundPage = '';
+    const foundPages: number[] = [];
+
+    const clean = (val: string | undefined | null) => {
+        if (!val) return null;
+        const s = String(val).trim();
+        if (s.toLowerCase() === 'null' || s.toLowerCase() === 'undefined') return null;
+        return s;
+    };
 
     try {
       for (let i = 0; i < capturedImages.length; i++) {
@@ -68,17 +75,18 @@ export const CreateSet: React.FC<CreateSetProps> = ({ onSave, onCancel }) => {
           const result: ExtractionResponse = await extractVocabularyFromImage(base64);
           
           if (result.metadata) {
-            const clean = (val: string | undefined | null) => {
-                if (!val) return null;
-                const s = String(val).trim();
-                if (s.toLowerCase() === 'null' || s.toLowerCase() === 'undefined') return null;
-                return s;
-            };
-
             if (!foundLanguage) foundLanguage = clean(result.metadata.language) || '';
             if (!foundGrade) foundGrade = clean(result.metadata.grade) || '';
             if (!foundChapter) foundChapter = clean(result.metadata.chapter) || '';
-            if (!foundPage) foundPage = clean(result.metadata.page) || '';
+            
+            const p = clean(result.metadata.page);
+            if (p) {
+                // Try to extract the first number found in the string
+                const match = p.match(/\d+/);
+                if (match) {
+                    foundPages.push(parseInt(match[0], 10));
+                }
+            }
           }
 
           if (result.vocabulary && result.vocabulary.length > 0) {
@@ -104,7 +112,26 @@ export const CreateSet: React.FC<CreateSetProps> = ({ onSave, onCancel }) => {
       if (foundLanguage) setMetaLanguage(foundLanguage);
       if (foundGrade) setMetaGrade(foundGrade);
       if (foundChapter) setMetaChapter(foundChapter);
-      if (foundPage) setMetaPage(foundPage);
+      
+      // Smart Page Naming Logic
+      if (foundPages.length > 0) {
+          const uniquePages = Array.from(new Set(foundPages)).sort((a, b) => a - b);
+          if (uniquePages.length === 1) {
+              setMetaPage(uniquePages[0].toString());
+          } else if (uniquePages.length > 0) {
+              const min = uniquePages[0];
+              const max = uniquePages[uniquePages.length - 1];
+              
+              // Check if just two consecutive pages -> "7f"
+              if (uniquePages.length === 2 && max === min + 1) {
+                  setMetaPage(`${min}f`);
+              } else {
+                  // Otherwise range -> "7-10"
+                  setMetaPage(`${min}-${max}`);
+              }
+          }
+      }
+
       setStep('EDIT');
 
     } catch (err) {
@@ -301,7 +328,7 @@ export const CreateSet: React.FC<CreateSetProps> = ({ onSave, onCancel }) => {
               <input 
                 value={metaGrade}
                 onChange={(e) => setMetaGrade(e.target.value)}
-                placeholder="z.B. 7"
+                placeholder="z.B. 9"
                 className="w-full bg-revo-teal border border-revo-emerald/50 rounded-lg px-3 py-2 font-semibold text-white placeholder-slate-500 focus:ring-1 focus:ring-revo-gold focus:border-revo-gold focus:outline-none"
               />
             </div>
@@ -321,7 +348,7 @@ export const CreateSet: React.FC<CreateSetProps> = ({ onSave, onCancel }) => {
               <input 
                 value={metaPage}
                 onChange={(e) => setMetaPage(e.target.value)}
-                placeholder="z.B. 45"
+                placeholder="z.B. 45-48"
                 className="w-full bg-revo-teal border border-revo-emerald/50 rounded-lg px-3 py-2 font-semibold text-white placeholder-slate-500 focus:ring-1 focus:ring-revo-gold focus:border-revo-gold focus:outline-none"
               />
             </div>
